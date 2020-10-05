@@ -26,9 +26,10 @@ type CloudantContent struct {
 
 // DatabaseContent holds mock content for mock database.
 type DatabaseContent struct {
-	Info  cloudant.Info
-	Docs  map[string][]byte
-	Views map[string][]string // map design URL, e.g. /_design/search~view/_view/versions?descending=true&include_docs=true&key=PLAN-abcd&limit=1 to list of doc IDs from docs
+	Info    cloudant.Info
+	Docs    map[string][]byte
+	Views   map[string][]string // map design URL, e.g. /_design/search~view/_view/versions?descending=true&include_docs=true&key=PLAN-abcd&limit=1 to list of doc IDs from docs
+	Indexes map[string][]string // map design URL, e.g. /_design/search~view/_search/full?q=*:* to list of doc IDs from docs
 }
 
 type mockClientImpl struct {
@@ -217,6 +218,41 @@ func (d *mockDatabaseImpl) ViewRaw(designName, viewName string, q *cloudant.View
 	for id, doc := range d.client.databases[d.databaseName].Docs {
 		// if view does not exist, build a view out of all documents, otherwise include IDs specified in the mock view only
 		if !viewExists || Contains(view, id) {
+			docs = append(docs, `{"id":"`+id+`","key":"~mock~","value":"~mock~","doc":`+string(doc)+`}`)
+		}
+	}
+	return []byte(`{"rows":[` + strings.Join(docs[:], ",") + `]}`), nil
+}
+
+// Index returns a channel of search index documents rows.
+func (d *mockDatabaseImpl) Index(designName, indexName string, q *cloudant.IndexQuery) (<-chan []byte, error) {
+	urlStr, _ := cloudant.Endpoint(url.URL{}, "/_design/"+designName+"/_search/"+indexName, q.URLValues)
+
+	// if mock index was supplied, get the list of IDs to include
+	index, indexExists := d.client.databases[d.databaseName].Indexes[urlStr]
+
+	results := make(chan []byte, 1000)
+	for id, doc := range d.client.databases[d.databaseName].Docs {
+		// if index does not exist, build an index out of all documents, otherwise include IDs specified in the mock index only
+		if !indexExists || Contains(index, id) {
+			results <- []byte(`{"id":"` + id + `","key":"~mock~","value":"~mock~","doc":` + string(doc) + `}`)
+		}
+	}
+
+	return results, nil
+}
+
+// IndexRaw returns mock raw search index response.
+func (d *mockDatabaseImpl) IndexRaw(designName, indexName string, q *cloudant.IndexQuery) ([]byte, error) {
+	urlStr, _ := cloudant.Endpoint(url.URL{}, "/_design/"+designName+"/_search/"+indexName, q.URLValues)
+
+	// if mock index was supplied, get the list of IDs to include
+	index, indexExists := d.client.databases[d.databaseName].Indexes[urlStr]
+
+	docs := []string{}
+	for id, doc := range d.client.databases[d.databaseName].Docs {
+		// if index does not exist, build an index out of all documents, otherwise include IDs specified in the mock index only
+		if !indexExists || Contains(index, id) {
 			docs = append(docs, `{"id":"`+id+`","key":"~mock~","value":"~mock~","doc":`+string(doc)+`}`)
 		}
 	}

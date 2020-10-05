@@ -29,6 +29,8 @@ type Database interface {
 	List(q *cloudant.ViewQuery) (<-chan []byte, error)
 	View(designName, viewName string, q *cloudant.ViewQuery) (<-chan []byte, error)
 	ViewRaw(string, string, *cloudant.ViewQuery) ([]byte, error)
+	Index(designName, indexName string, q *cloudant.IndexQuery) (<-chan []byte, error)
+	IndexRaw(string, string, *cloudant.IndexQuery) ([]byte, error)
 }
 
 // NewClient returns a new Cloudanti client.
@@ -124,4 +126,14 @@ func (d *databaseImpl) View(designName, viewName string, q *cloudant.ViewQuery) 
 // ViewRaw returns raw view response.
 func (d *databaseImpl) ViewRaw(designName, viewName string, q *cloudant.ViewQuery) ([]byte, error) {
 	return d.database.ViewRaw(designName, viewName, q)
+}
+
+// View returns a channel of view documents in which matching row types can be received.
+func (d *databaseImpl) Index(designName, indexName string, q *cloudant.IndexQuery) (<-chan []byte, error) {
+	return d.database.Index(designName, indexName, q)
+}
+
+// ViewRaw returns raw view response.
+func (d *databaseImpl) IndexRaw(designName, indexName string, q *cloudant.IndexQuery) ([]byte, error) {
+	return d.database.IndexRaw(designName, indexName, q)
 }
