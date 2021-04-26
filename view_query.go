@@ -121,9 +121,9 @@ func (q *ViewQuery) R(r int) *ViewQuery {
 	return q
 }
 
-// Reduce applies reduce=true parameter to Cloudant ViewQuery
-func (q *ViewQuery) Reduce() *ViewQuery {
-	q.URLValues.Set("reduce", "true")
+// DoNotReduce applies reduce=false parameter to Cloudant ViewQuery (the default value for views with reduce is true)
+func (q *ViewQuery) DoNotReduce() *ViewQuery {
+	q.URLValues.Set("reduce", "false")
 	return q
 }
 
